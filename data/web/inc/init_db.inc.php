@@ -1272,16 +1272,9 @@ function init_db_schema() {
     $stmt = $pdo->query("ALTER TABLE `tfa` MODIFY COLUMN `authmech` ENUM('yubi_otp', 'u2f', 'hotp', 'totp', 'webauthn')");
 
     // Inject admin if not exists
-    $stmt = $pdo->query("SELECT NULL FROM `admin`");
-    $num_results = count($stmt->fetchAll(PDO::FETCH_ASSOC));
-    if ($num_results == 0) {
-    $pdo->query("INSERT INTO `admin` (`username`, `password`, `superadmin`, `created`, `modified`, `active`)
-      VALUES ('admin', '{SSHA256}K8eVJ6YsZbQCfuJvSUbaQRLr0HPLz5rC9IAp0PAFl0tmNDBkMDc0NDAyOTAxN2Rk', 1, NOW(), NOW(), 1)");
-    $pdo->query("INSERT INTO `domain_admins` (`username`, `domain`, `created`, `active`)
-        SELECT `username`, 'ALL', NOW(), 1 FROM `admin`
-          WHERE superadmin='1' AND `username` NOT IN (SELECT `username` FROM `domain_admins`);");
-    $pdo->query("DELETE FROM `admin` WHERE `username` NOT IN  (SELECT `username` FROM `domain_admins`);");
-    }
+    // not doing that - run helper-scripts/mailcow-reset-admin.sh on first launch!
+    // See https://github.com/mailcow/mailcow-dockerized/issues/1245
+
     // Insert new DB schema version
     $pdo->query("REPLACE INTO `versions` (`application`, `version`) VALUES ('db_schema', '" . $db_version . "');");
 
@@ -1345,7 +1338,7 @@ function init_db_schema() {
         "key_size" => 2048,
         "max_quota_for_domain" => 10240 * 1048576,
       )
-    );     
+    );
     $default_mailbox_template = array(
       "template" => "Default",
       "type" => "mailbox",
@@ -1380,7 +1373,7 @@ function init_db_schema() {
         "acl_quarantine_category" => 1,
         "acl_app_passwds" => 1,
       )
-    );        
+    );
     $stmt = $pdo->prepare("SELECT id FROM `templates` WHERE `type` = :type AND `template` = :template");
     $stmt->execute(array(
       ":type" => "domain",
@@ -1394,8 +1387,8 @@ function init_db_schema() {
         ":type" => "domain",
         ":template" => $default_domain_template["template"],
         ":attributes" => json_encode($default_domain_template["attributes"])
-      )); 
-    }    
+      ));
+    }
     $stmt = $pdo->prepare("SELECT id FROM `templates` WHERE `type` = :type AND `template` = :template");
     $stmt->execute(array(
       ":type" => "mailbox",
@@ -1409,8 +1402,8 @@ function init_db_schema() {
         ":type" => "mailbox",
         ":template" => $default_mailbox_template["template"],
         ":attributes" => json_encode($default_mailbox_template["attributes"])
-      )); 
-    } 
+      ));
+    }
 
     if (php_sapi_name() == "cli") {
       echo "DB initialization completed" . PHP_EOL;
